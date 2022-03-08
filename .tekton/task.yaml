@@ -31,7 +31,7 @@ spec:
       command: ["/bin/sh", "-c"]
       args:
         - set -e -o pipefail;
-          url="https://github.com/MonikaReddy29/Tekton.git" ;
+          url="https://github.com/yathishareddy/Tekton.git" ;
           cd /workspace && git clone -q  $url .;
 
     - name: logscmd
