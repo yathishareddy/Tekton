@@ -1,1 +1,55 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: activitytracker-task
+spec:
+  params:
+    - name: repository
+      description: the git repository
+    - name: revision
+      description: the revision
+      default: main
+    - name: apikey
+      description: the ibmcloud api key
+    - name: api
+      description: the ibmcloud api endpoint
+      default: "https://cloud.ibm.com"      
+    - name: continuous-delivery-context-secret
+      description: name of the configmap containing the continuous delivery pipeline context secrets
+      default: cd-secret
+  workspaces:
+    - name: task-pvc
+      mountPath: /artifacts  
+  steps:
+    - name: clone-repo
+      image: alpine/git
+      env:
+        - name: repository
+          value: $(params.repository)
+        - name: REVISION
+          value: $(params.revision)
+      command: ["/bin/sh", "-c"]
+      args:
+        - set -e -o pipefail;
+          url="https://github.com/MonikaReddy29/Tekton.git" ;
+          cd /workspace && git clone -q  $url .;
 
+    - name: logscmd
+      image: ibmcom/pipeline-base-image:latest
+      env:
+        - name: apikey
+          valueFrom:
+            secretKeyRef:
+              name: $(params.continuous-delivery-context-secret)
+              key: apikey    
+      command: ["/bin/bash", "-c"]
+      args:
+        - set -e -o pipefail;
+          ibmcloud login -a $(params.api) -r in-che --apikey $apikey;
+          cd /workspace;      
+          echo "staring install";
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh;
+          ibmcloud plugin install logging;
+          ibmcloud logging service-instances --output wide --all-regions;
+          ibmcloud logging service-instances --output wide --all-regions --sn logdnaat;
+          ibmcloud resource service-instance Activity Tracker --location eu-gb -g Default --id --output json -q, --quiet
